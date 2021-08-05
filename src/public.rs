@@ -9,7 +9,7 @@ use hyper::{Body, Client, client::HttpConnector, Uri};
 use hyper_tls::HttpsConnector;
 use uritemplate::UriTemplate;
 
-use crate::{CBError, Result, request, DateTime};
+use crate::{CBError, DateTime, Result, error::Error, request};
 
 pub struct Public {
     pub(crate) uri: String,
@@ -120,6 +120,12 @@ impl Public {
         let request_future = self.client.request(request);
 
         let response = request_future.await?;
+
+        // Helps debug coinbase-rs after new updates to API
+        if !response.status().is_success() { 
+            return Err(CBError::Coinbase(Error { message: response.status().canonical_reason().unwrap().to_string() } )); // TODO: Support Coinbase error message deserializing
+        }
+
         let body = hyper::body::to_bytes(response.into_body()).await?;
 
         match serde_json::from_slice::<Response<U>>(&body) {
@@ -227,7 +233,19 @@ struct CurrentTime {
 mod test {
     use bigdecimal::FromPrimitive;
 
+    use crate::MAIN_URL;
+
     use super::*;
+
+    #[tokio::test]
+    async fn test_status_code_return() { 
+        let public = Public::new(MAIN_URL);
+        // TODO: Also fix the buy_price() function to not accept malformed input, preferably, this is just for the tests
+
+        if let Ok(_) = public.buy_price("FWDSADS-RLY").await {
+            panic!("Test output isn't an error")
+        }
+    }
 
     #[test]
     fn test_currencies_deserialize() {

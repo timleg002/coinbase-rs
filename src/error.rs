@@ -4,7 +4,7 @@ use thiserror::Error;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Error {
-    message: String,
+    pub message: String,
 }
 
 impl fmt::Display for Error {
@@ -12,7 +12,6 @@ impl fmt::Display for Error {
         write!(f, "{}", self.message)
     }
 }
-
 #[derive(Debug, Error)]
 pub enum CBError {
     #[error("http error {0}")]
